@@ -1,0 +1,103 @@
+{% extends 'dyeing/base.html' %}
+{% block content %}
+<h2 class="mb-3">{{ page_title }}</h2>
+<form method="post">
+    {% csrf_token %}
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">批次主表</div>
+        <div class="card-body">{{ form.as_p }}</div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">环境设备表</div>
+        <div class="card-body">{{ env_form.as_p }}</div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">结果表</div>
+        <div class="card-body">{{ result_form.as_p }}</div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">化学品表</div>
+        <div class="card-body">
+            {{ chemical_formset.management_form }}
+            <table class="table formset-table">
+                <thead>
+                    <tr>
+                        <th>类型</th>
+                        <th>名称</th>
+                        <th>浓度</th>
+                        <th>检测方法</th>
+                        <th>备注</th>
+                        <th>删除</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for form in chemical_formset %}
+                    <tr>
+                        <td>{{ form.chemical_type }}</td>
+                        <td>{{ form.chemical_name }}</td>
+                        <td>{{ form.concentration_gpl }}</td>
+                        <td>{{ form.measurement_method }}</td>
+                        <td>{{ form.remark }}</td>
+                        <td>{% if form.instance.pk %}{{ form.DELETE }}{% endif %}</td>
+                    </tr>
+                    {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header">工艺时序表</div>
+        <div class="card-body">
+            {{ process_formset.management_form }}
+            <div class="table-responsive">
+                <table class="table table-sm formset-table">
+                    <thead>
+                        <tr>
+                            <th>时间</th>
+                            <th>温度</th>
+                            <th>升降温速率</th>
+                            <th>pH</th>
+                            <th>电导率</th>
+                            <th>流速</th>
+                            <th>染料浓度</th>
+                            <th>上染率</th>
+                            <th>搅拌强度</th>
+                            <th>光谱JSON</th>
+                            <th>备注</th>
+                            <th>删除</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for form in process_formset %}
+                        <tr>
+                            <td>{{ form.time_min }}</td>
+                            <td>{{ form.temperature_c }}</td>
+                            <td>{{ form.heating_rate_cpm }}</td>
+                            <td>{{ form.ph }}</td>
+                            <td>{{ form.conductivity_ms_cm }}</td>
+                            <td>{{ form.flow_rate_lpm }}</td>
+                            <td>{{ form.dye_concentration_gpl }}</td>
+                            <td>{{ form.dye_uptake_pct }}</td>
+                            <td>{{ form.stirring_intensity_rpm }}</td>
+                            <td>{{ form.dye_concentration_spectrum }}</td>
+                            <td>{{ form.remark }}</td>
+                            <td>{% if form.instance.pk %}{{ form.DELETE }}{% endif %}</td>
+                        </tr>
+                        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">保存</button>
+    <a href="{% url 'dyeing:batch_list' %}" class="btn btn-secondary">返回</a>
+</form>
+{% endblock %}

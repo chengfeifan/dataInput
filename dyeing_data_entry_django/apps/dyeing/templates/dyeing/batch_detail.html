@@ -1,0 +1,125 @@
+{% extends 'dyeing/base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>批次详情：{{ batch.batch_id }}</h2>
+    <a href="{% url 'dyeing:batch_update' batch.pk %}" class="btn btn-primary">编辑</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">批次主表</div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <tr><th>订单号</th><td>{{ batch.order_no }}</td><th>纤维种类</th><td>{{ batch.fiber_type }}</td></tr>
+                    <tr><th>坯布克重</th><td>{{ batch.fabric_weight_gsm }}</td><th>门幅</th><td>{{ batch.width_cm }}</td></tr>
+                    <tr><th>纤维结构</th><td>{{ batch.fiber_structure }}</td><th>织法</th><td>{{ batch.weave_type }}</td></tr>
+                    <tr><th>前处理评分</th><td>{{ batch.pretreatment_score }}</td><th>浴比</th><td>{{ batch.liquor_ratio }}</td></tr>
+                    <tr><th>装载量</th><td>{{ batch.load_amount_kg }}</td><th>操作员</th><td>{{ batch.operator_name }}</td></tr>
+                    <tr><th>缸号</th><td>{{ batch.machine_id }}</td><th>创建时间</th><td>{{ batch.created_at }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">化学品表</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead><tr><th>类型</th><th>名称</th><th>浓度(g/L)</th><th>检测方法</th><th>备注</th></tr></thead>
+                    <tbody>
+                    {% for item in batch.chemicals.all %}
+                        <tr>
+                            <td>{{ item.chemical_type }}</td>
+                            <td>{{ item.chemical_name }}</td>
+                            <td>{{ item.concentration_gpl }}</td>
+                            <td>{{ item.measurement_method }}</td>
+                            <td>{{ item.remark }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5" class="text-muted text-center">暂无数据</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header">工艺时序表</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>时间(min)</th><th>温度</th><th>pH</th><th>电导率</th><th>流速</th><th>上染率</th><th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in batch.process_records.all %}
+                        <tr>
+                            <td>{{ item.time_min }}</td>
+                            <td>{{ item.temperature_c }}</td>
+                            <td>{{ item.ph }}</td>
+                            <td>{{ item.conductivity_ms_cm }}</td>
+                            <td>{{ item.flow_rate_lpm }}</td>
+                            <td>{{ item.dye_uptake_pct }}</td>
+                            <td>{{ item.remark }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="7" class="text-muted text-center">暂无数据</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header">环境设备表</div>
+            <div class="card-body">
+                {% if batch.environment %}
+                <table class="table table-bordered">
+                    <tr><th>水pH</th><td>{{ batch.environment.water_ph }}</td></tr>
+                    <tr><th>水电导率</th><td>{{ batch.environment.water_conductivity_us_cm }}</td></tr>
+                    <tr><th>硬度</th><td>{{ batch.environment.water_hardness_mgL }}</td></tr>
+                    <tr><th>COD</th><td>{{ batch.environment.water_cod_mgL }}</td></tr>
+                    <tr><th>设备状态</th><td>{{ batch.environment.equipment_status }}</td></tr>
+                    <tr><th>振动</th><td>{{ batch.environment.vibration_mm_s }}</td></tr>
+                    <tr><th>设备温度</th><td>{{ batch.environment.equipment_temp_c }}</td></tr>
+                    <tr><th>SOP一致性</th><td>{{ batch.environment.sop_compliance }}</td></tr>
+                    <tr><th>备注</th><td>{{ batch.environment.remark }}</td></tr>
+                </table>
+                {% else %}
+                <p class="text-muted">暂无环境设备数据</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header">结果表</div>
+            <div class="card-body">
+                {% if batch.result %}
+                <table class="table table-bordered">
+                    <tr><th>染色时间</th><td>{{ batch.result.dye_time_min }}</td></tr>
+                    <tr><th>K/S</th><td>{{ batch.result.ks_value }}</td></tr>
+                    <tr><th>反射率</th><td>{{ batch.result.reflectance_pct }}</td></tr>
+                    <tr><th>ΔE2000</th><td>{{ batch.result.delta_e_2000 }}</td></tr>
+                    <tr><th>L/a/b</th><td>{{ batch.result.result_l }} / {{ batch.result.result_a }} / {{ batch.result.result_b }}</td></tr>
+                    <tr><th>RFT</th><td>{{ batch.result.rft_flag }}</td></tr>
+                    <tr><th>复修次数</th><td>{{ batch.result.rework_count }}</td></tr>
+                    <tr><th>蒸汽能耗</th><td>{{ batch.result.energy_steam_kg }}</td></tr>
+                    <tr><th>备注</th><td>{{ batch.result.remark }}</td></tr>
+                </table>
+                {% else %}
+                <p class="text-muted">暂无结果数据</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

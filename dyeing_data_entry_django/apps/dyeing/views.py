@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -15,16 +16,19 @@ from .models import Batch
 from .services import import_from_excel
 
 
+@login_required
 def batch_list(request):
     batches = Batch.objects.all()
     return render(request, "dyeing/batch_list.html", {"batches": batches})
 
 
+@login_required
 def batch_detail(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
     return render(request, "dyeing/batch_detail.html", {"batch": batch})
 
 
+@login_required
 def batch_create(request):
     if request.method == "POST":
         form = BatchForm(request.POST)
@@ -79,6 +83,7 @@ def batch_create(request):
     )
 
 
+@login_required
 def batch_update(request, pk):
     batch = get_object_or_404(Batch, pk=pk)
     env_instance = getattr(batch, "environment", None)
@@ -133,17 +138,29 @@ def batch_update(request, pk):
     )
 
 
+@login_required
 def excel_import_view(request):
     if request.method == "POST":
         form = UploadExcelForm(request.POST, request.FILES)
         if form.is_valid():
-            result = import_from_excel(form.cleaned_data["file"])
-            messages.success(
-                request,
-                f"导入成功：批次 {result['batch_count']} 条，化学品 {result['chemical_count']} 条，时序 {result['process_count']} 条。"
-            )
-            return redirect(reverse("dyeing:batch_list"))
+            try:
+                result = import_from_excel(form.cleaned_data["file"])
+            except ValueError as exc:
+                messages.error(request, f"导入失败：{exc}")
+            except Exception:
+                messages.error(request, "导入失败：文件格式不符合模板或内容存在非法值。")
+            else:
+                messages.success(
+                    request,
+                    f"导入成功：批次 {result['batch_count']} 条，化学品 {result['chemical_count']} 条，时序 {result['process_count']} 条。"
+                )
+                return redirect(reverse("dyeing:batch_list"))
     else:
         form = UploadExcelForm()
 
     return render(request, "dyeing/import_form.html", {"form": form})
+
+
+@login_required
+def vue_entry_view(request):
+    return render(request, "dyeing/vue_entry.html")

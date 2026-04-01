@@ -147,3 +147,7 @@ def excel_import_view(request):
         form = UploadExcelForm()
 
     return render(request, "dyeing/import_form.html", {"form": form})
+
+
+def vue_entry_view(request):
+    return render(request, "dyeing/vue_entry.html")

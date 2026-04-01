@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>工业数据录入台 - Vue</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <style>
+    body {
+      background: radial-gradient(circle at top, #1f2937 0%, #0f172a 45%, #020617 100%);
+    }
+    .panel {
+      border: 1px solid rgba(148, 163, 184, .24);
+      box-shadow: 0 0 0 1px rgba(30, 41, 59, .2), 0 16px 40px rgba(2, 6, 23, .45);
+      background: linear-gradient(160deg, rgba(15,23,42,.95), rgba(17,24,39,.92));
+    }
+    .label { color: #94a3b8; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+    .field {
+      width: 100%; border-radius: .5rem; border: 1px solid #334155; background: #0b1220;
+      color: #e2e8f0; padding: .55rem .7rem;
+    }
+    .field:focus { outline: none; border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34,211,238,.2); }
+  </style>
+</head>
+<body class="text-slate-100 min-h-screen">
+<div id="app" class="max-w-7xl mx-auto px-4 py-8">
+  <header class="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <div>
+      <p class="text-cyan-300 text-sm tracking-widest">DYEING INPUT CONSOLE</p>
+      <h1 class="text-2xl md:text-3xl font-bold">染整工业数据录入台（Vue + Tailwind）</h1>
+    </div>
+    <a href="/" class="px-3 py-2 rounded-md bg-slate-800 hover:bg-slate-700 text-sm">返回 Django 页面</a>
+  </header>
+
+  <form @submit.prevent="handleSubmit" class="space-y-4">
+    <section class="panel rounded-xl p-4">
+      <h2 class="font-semibold mb-3 text-cyan-300">批次主数据</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div><label class="label">批次ID</label><input v-model="form.batch_id" class="field" required></div>
+        <div><label class="label">订单号</label><input v-model="form.order_no" class="field"></div>
+        <div><label class="label">操作员</label><input v-model="form.operator_name" class="field" required></div>
+        <div><label class="label">机台号</label><input v-model="form.machine_id" class="field" required></div>
+      </div>
+    </section>
+
+    <section class="panel rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-cyan-300">化学品记录</h2>
+        <button type="button" @click="addChemical" class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-sm">新增一行</button>
+      </div>
+      <div class="space-y-2">
+        <div v-for="(item, index) in form.chemicals" :key="index" class="grid grid-cols-1 md:grid-cols-5 gap-2">
+          <input v-model="item.chemical_type" class="field" placeholder="类型(染料/助剂)">
+          <input v-model="item.chemical_name" class="field" placeholder="名称">
+          <input v-model="item.concentration_gpl" class="field" placeholder="浓度(g/L)">
+          <input v-model="item.measurement_method" class="field" placeholder="检测方法">
+          <button type="button" @click="removeChemical(index)" class="rounded bg-rose-600 hover:bg-rose-500">删除</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel rounded-xl p-4">
+      <h2 class="font-semibold mb-3 text-cyan-300">结果与质控</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div><label class="label">色差 ΔE2000</label><input v-model="form.result.delta_e_2000" class="field"></div>
+        <div><label class="label">一次成功</label>
+          <select v-model="form.result.rft_flag" class="field"><option>是</option><option>否</option></select>
+        </div>
+        <div><label class="label">复修次数</label><input v-model="form.result.rework_count" class="field" type="number"></div>
+        <div><label class="label">蒸汽能耗(kg)</label><input v-model="form.result.energy_steam_kg" class="field"></div>
+      </div>
+    </section>
+
+    <div class="flex flex-wrap items-center gap-3">
+      <button class="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-semibold">生成录入 JSON</button>
+      <span class="text-slate-400 text-sm">当前为前端录入界面，可用于人工录入与后续 API 对接。</span>
+    </div>
+  </form>
+
+  <section class="panel rounded-xl p-4 mt-4">
+    <h3 class="font-semibold mb-2 text-cyan-300">预览输出</h3>
+    <pre class="text-xs overflow-x-auto text-slate-200">{{ formattedPayload }}</pre>
+  </section>
+</div>
+
+<script>
+const { createApp, computed } = Vue;
+
+createApp({
+  data() {
+    return {
+      form: {
+        batch_id: '',
+        order_no: '',
+        operator_name: '',
+        machine_id: '',
+        chemicals: [
+          { chemical_type: '', chemical_name: '', concentration_gpl: '', measurement_method: '' }
+        ],
+        result: { delta_e_2000: '', rft_flag: '是', rework_count: 0, energy_steam_kg: '' }
+      },
+      payload: null
+    }
+  },
+  computed: {
+    formattedPayload() {
+      return this.payload ? JSON.stringify(this.payload, null, 2) : '点击“生成录入 JSON”后在此预览。';
+    }
+  },
+  methods: {
+    addChemical() {
+      this.form.chemicals.push({ chemical_type: '', chemical_name: '', concentration_gpl: '', measurement_method: '' });
+    },
+    removeChemical(index) {
+      this.form.chemicals.splice(index, 1);
+    },
+    handleSubmit() {
+      this.payload = JSON.parse(JSON.stringify(this.form));
+    }
+  }
+}).mount('#app');
+</script>
+</body>
+</html>

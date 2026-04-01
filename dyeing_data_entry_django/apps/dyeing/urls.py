@@ -10,4 +10,5 @@ urlpatterns = [
     path("batch/<str:pk>/", views.batch_detail, name="batch_detail"),
     path("batch/<str:pk>/edit/", views.batch_update, name="batch_update"),
     path("import/", views.excel_import_view, name="excel_import"),
+    path("vue-entry/", views.vue_entry_view, name="vue_entry"),
 ]

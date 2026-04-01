@@ -69,6 +69,17 @@ dyeing_data_entry_django/
 
 ## 六、启动方式
 
+### 方式 A：一键启动（推荐）
+
+```bash
+cd dyeing_data_entry_django
+./run.sh
+```
+
+脚本会自动完成：创建虚拟环境、安装依赖、生成迁移、执行迁移、系统检查，并启动服务。
+
+### 方式 B：手动启动
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate  # Windows 用 .venv\Scripts\activate

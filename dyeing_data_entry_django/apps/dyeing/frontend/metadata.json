@@ -1,0 +1,5 @@
+{
+  "name": "印染工艺数据录入系统",
+  "description": "用于记录和管理印染过程中的各项工艺参数、设备状态及检测结果的数据录入系统。",
+  "requestFramePermissions": []
+}

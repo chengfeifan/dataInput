@@ -1,7 +1,11 @@
+import json
+
 from django.contrib import messages
 from django.db import transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
 from .forms import (
     BatchForm,
@@ -12,7 +16,7 @@ from .forms import (
     UploadExcelForm,
 )
 from .models import Batch
-from .services import import_from_excel
+from .services import import_from_excel, import_from_json_payload
 
 
 def batch_list(request):
@@ -151,3 +155,27 @@ def excel_import_view(request):
 
 def vue_entry_view(request):
     return render(request, "dyeing/vue_entry.html")
+
+
+@require_POST
+def api_import_json_view(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "JSON 格式不正确"}, status=400)
+
+    try:
+        result = import_from_json_payload(payload)
+        return JsonResponse({"ok": True, "result": result})
+    except ValueError as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+
+
+@require_POST
+def api_import_excel_view(request):
+    file_obj = request.FILES.get("file")
+    if not file_obj:
+        return JsonResponse({"ok": False, "error": "请上传 Excel 文件"}, status=400)
+
+    result = import_from_excel(file_obj)
+    return JsonResponse({"ok": True, "result": result})

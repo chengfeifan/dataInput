@@ -74,9 +74,23 @@
 
     <div class="flex flex-wrap items-center gap-3">
       <button class="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-500 font-semibold">生成录入 JSON</button>
-      <span class="text-slate-400 text-sm">当前为前端录入界面，可用于人工录入与后续 API 对接。</span>
+      <button type="button" @click="uploadJson" class="px-4 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 font-semibold">一键上传 JSON</button>
+      <span class="text-slate-400 text-sm">已接入 Django 后端接口，支持 JSON 与 Excel 一键上传。</span>
     </div>
+
+    <section class="panel rounded-xl p-4">
+      <h2 class="font-semibold mb-3 text-cyan-300">Excel 一键上传</h2>
+      <div class="flex flex-wrap gap-3 items-center">
+        <input type="file" @change="handleExcelChange" accept=".xlsx,.xls" class="field max-w-md">
+        <button type="button" @click="uploadExcel" class="px-4 py-2 rounded-md bg-violet-600 hover:bg-violet-500 font-semibold">一键上传 Excel</button>
+      </div>
+    </section>
   </form>
+
+  <section class="panel rounded-xl p-4 mt-4" v-if="message">
+    <h3 class="font-semibold mb-2 text-cyan-300">上传状态</h3>
+    <p class="text-sm" :class="messageType === 'success' ? 'text-emerald-300' : 'text-rose-300'">{{ message }}</p>
+  </section>
 
   <section class="panel rounded-xl p-4 mt-4">
     <h3 class="font-semibold mb-2 text-cyan-300">预览输出</h3>
@@ -100,7 +114,10 @@ createApp({
         ],
         result: { delta_e_2000: '', rft_flag: '是', rework_count: 0, energy_steam_kg: '' }
       },
-      payload: null
+      payload: null,
+      excelFile: null,
+      message: '',
+      messageType: 'success'
     }
   },
   computed: {
@@ -117,6 +134,72 @@ createApp({
     },
     handleSubmit() {
       this.payload = JSON.parse(JSON.stringify(this.form));
+      this.message = 'JSON 已生成，可点击“一键上传 JSON”直接写入 Django。';
+      this.messageType = 'success';
+    },
+    handleExcelChange(event) {
+      this.excelFile = event.target.files[0] || null;
+    },
+    getCsrfToken() {
+      const value = `; ${document.cookie}`;
+      const parts = value.split('; csrftoken=');
+      if (parts.length === 2) {
+        return parts.pop().split(';').shift();
+      }
+      return '';
+    },
+    async uploadJson() {
+      if (!this.payload) {
+        this.message = '请先点击“生成录入 JSON”。';
+        this.messageType = 'error';
+        return;
+      }
+      try {
+        const response = await fetch('/api/import/json/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': this.getCsrfToken()
+          },
+          body: JSON.stringify(this.payload)
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || 'JSON 上传失败');
+        }
+        this.message = `JSON 上传成功：批次 ${data.result.batch_id}，化学品 ${data.result.chemical_count} 条，时序 ${data.result.process_count} 条。`;
+        this.messageType = 'success';
+      } catch (error) {
+        this.message = `JSON 上传失败：${error.message}`;
+        this.messageType = 'error';
+      }
+    },
+    async uploadExcel() {
+      if (!this.excelFile) {
+        this.message = '请先选择 Excel 文件。';
+        this.messageType = 'error';
+        return;
+      }
+      try {
+        const formData = new FormData();
+        formData.append('file', this.excelFile);
+        const response = await fetch('/api/import/excel/', {
+          method: 'POST',
+          headers: {
+            'X-CSRFToken': this.getCsrfToken()
+          },
+          body: formData
+        });
+        const data = await response.json();
+        if (!response.ok || !data.ok) {
+          throw new Error(data.error || 'Excel 上传失败');
+        }
+        this.message = `Excel 上传成功：批次 ${data.result.batch_count} 条，化学品 ${data.result.chemical_count} 条，时序 ${data.result.process_count} 条。`;
+        this.messageType = 'success';
+      } catch (error) {
+        this.message = `Excel 上传失败：${error.message}`;
+        this.messageType = 'error';
+      }
     }
   }
 }).mount('#app');
